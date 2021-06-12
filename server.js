@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 require('dotenv').config();
- //const mongoose =require('mongoose');
+ const mongoose =require('mongoose');
 
  const server = express();
  server.use(cors());
@@ -13,24 +13,28 @@ require('dotenv').config();
  const PORT=process.env.PORT;
 
 
-// mongoose.connect('mongodb://localhost:27017/recipes',
-// { useNewUrlParser: true, useUnifiedTopology: true }); 
+mongoose.connect('mongodb://localhost:27017/myRecipes',
+{ useNewUrlParser: true, useUnifiedTopology: true }); 
 
 
-// const recipeSchema = new mongoose.Schema({
-//     label :String,
-//     image:String,
-//     ingredientLines:Array,
+const recipeSchema = new mongoose.Schema({
+    label :String,
+    image:String,
+    ingredientLines:Array,
 
-// })
-// const recipeModel = mongoose.model('recipe',recipeSchema)
+})
+const recipeModel = mongoose.model('recipe',recipeSchema)
  
- server.get('/test', testHandler);
+//  server.get('/test', testHandler);
  server.get('/recipes',recipesHandler);
-//  server.post('/addToFav',favoriteHandler);
-//  server.get('/getFav',getFavoriteHandler);
-//  server.delete('/deleteRecipe/:id',deleteHandler);
-//  server.put('/updateRecipe/:id',updateHandler);
+ server.post('/addToFav',favoriteHandler);
+ server.get('/getFavoriteRecipies',getFavoriteHandler);
+ server.delete('/deleteRecipe/:id',deleteHandler);
+  server.put('/updateRecipe/:id',updateHandler);
+
+
+
+
 
 //here request data from api to send the res to front end
 function recipesHandler(req,res){
@@ -52,9 +56,54 @@ axios
 }
 
 
- function testHandler(req, res) {
-    res.send('test route')
+function deleteHandler(req,res){
+const id=req.params.id;
+recipeModel.remove({_id:id},(error,deletData)=>{
+    recipeModel.find({},(error,data)=>{
+        res.send(data)
+    })
+})
+
 }
+
+function updateHandler (req,res){
+    const {label,image} = req.body;
+    const id=req.params.id;
+    recipeModel.findOne({_id:id},(error,updateDate2)=>{
+        updateDate2.label=   label;
+        updateDate2.image =image;
+        updateDate2.save()
+        .then(()=>{
+            recipeModel.find({},(error,updateDate2)=>{
+                res.send(updateDate2)
+            }) 
+        })
+    })
+}
+
+function favoriteHandler(req,res) {
+    console.log(req.body);
+    const {label,image,ingredientLines} = req.body;
+
+    const newRecipe = new recipeModel({
+        label: label,
+        image:image,
+        ingredientLines:ingredientLines
+    })
+    
+    newRecipe.save()
+
+}
+
+function getFavoriteHandler(req,res) {
+    recipeModel.find({},(error,favData)=>{
+        res.send(favData)
+    })
+}
+
+//  function testHandler(req, res) {
+//     res.send('test route')
+// }
 
 server.get('/', (request, response) => {
     let str = 'hello from back end';
